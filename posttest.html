@@ -1,0 +1,26 @@
+<form id="myForm">
+    <input type="text" id="message" name="message" placeholder="Message" />
+    <input type="text" id="userId" name="userId" placeholder="User ID" />
+    <button type="submit">Submit</button>
+</form>
+
+<script>
+    document
+        .getElementById('myForm')
+        .addEventListener('submit', function (event) {
+            event.preventDefault();
+            fetch('http://localhost:3000/api/notify-click', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    message: document.getElementById('message').value,
+                    userId: document.getElementById('userId').value,
+                }),
+            })
+                .then((response) => response.json())
+                .then((data) => console.log(data))
+                .catch((error) => console.error('Error:', error));
+        });
+</script>

