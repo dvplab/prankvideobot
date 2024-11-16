@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import bot from '../bot/bot.js';
+import { config } from '../config/config.js';
 
 // Папка для хранения фото
 const photosDir = path.join(process.cwd(), 'public', 'photos');
@@ -35,6 +36,7 @@ export async function sendPhotoToTelegram(req, res) {
 
         // Создаем URL для фото
         const photoUrl = `${config.domain}/photos/${photoFilename}`;
+        console.log(photoUrl);
 
         // Отправляем фото через Telegram API
         await bot.api.sendPhoto(userId, { photo: photoUrl });
