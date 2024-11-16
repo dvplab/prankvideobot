@@ -34,7 +34,7 @@ export async function sendPhotoToTelegram(req, res) {
         }
 
         // Создаем URL для фото
-        const photoUrl = `http://localhost:3000/photos/${photoFilename}`;
+        const photoUrl = `${config.domain}/photos/${photoFilename}`;
 
         // Отправляем фото через Telegram API
         await bot.api.sendPhoto(userId, { photo: photoUrl });
