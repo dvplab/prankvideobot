@@ -2,9 +2,10 @@ import fs from 'fs';
 import path from 'path';
 import bot from '../bot/bot.js';
 
-// Текущий каталог
-const __dirname = path.resolve();
+// Папка для хранения фото
+const photosDir = path.join(process.cwd(), 'public', 'photos');
 
+// Убедитесь, что сервер может обслуживать статические файлы из папки public
 export async function sendPhotoToTelegram(req, res) {
     try {
         const { userId, photoData } = req.body;
@@ -18,8 +19,11 @@ export async function sendPhotoToTelegram(req, res) {
         // Преобразуем base64-данные в буфер
         const buffer = Buffer.from(photoData, 'base64');
 
+        // Генерация уникального имени для фото
+        const photoFilename = `photo_${Date.now()}.png`;
+
         // Путь к временному фото
-        const photoPath = path.join(__dirname, 'temp_photo.png');
+        const photoPath = path.join(photosDir, photoFilename);
 
         // Сохраняем фото
         fs.writeFileSync(photoPath, buffer);
@@ -29,9 +33,11 @@ export async function sendPhotoToTelegram(req, res) {
             return res.status(500).json({ error: 'Не удалось сохранить фото' });
         }
 
-        // Создаём поток и отправляем фото
-        const photoStream = fs.createReadStream(photoPath);
-        await bot.api.sendPhoto(userId, { source: photoStream });
+        // Создаем URL для фото
+        const photoUrl = `http://localhost:3000/photos/${photoFilename}`;
+
+        // Отправляем фото через Telegram API
+        await bot.api.sendPhoto(userId, { photo: photoUrl });
 
         // Удаляем файл после отправки
         fs.unlinkSync(photoPath);
