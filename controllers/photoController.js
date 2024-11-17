@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import axios from 'axios';
 import bot from '../bot/bot.js';
 
+// Для корректной работы с __dirname в ES-модуле
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -19,7 +20,7 @@ export async function sendPhotoToTelegram(req, res) {
 
         // Скачиваем файл на сервер
         const fileName = path.basename(photoUrl);
-        const localPath = `/tmp/${fileName}`; // Временная директория
+        const localPath = path.join(__dirname, 'tmp', fileName); // Путь к временной директории
 
         const response = await axios.get(photoUrl, { responseType: 'stream' });
         const writer = fs.createWriteStream(localPath);
