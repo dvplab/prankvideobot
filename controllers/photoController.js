@@ -1,9 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import bot from '../bot/bot.js';
 
-// Определяем __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -17,10 +15,10 @@ export async function sendPhotoToTelegram(req, res) {
                 .json({ error: 'Пользователь или фото не указаны' });
         }
 
-        // Преобразуем base64-данные в буфер
+        // Преобразуем base64 в буфер
         const buffer = Buffer.from(photoData, 'base64');
 
-        // Путь для сохранения фото
+        // Указываем путь для сохранения
         const photoPath = path.join(
             __dirname,
             '..',
@@ -28,8 +26,6 @@ export async function sendPhotoToTelegram(req, res) {
             'photos',
             `photo_${Date.now()}.png`
         );
-
-        // Сохраняем фото
         fs.writeFileSync(photoPath, buffer);
 
         // Проверяем, что файл существует
@@ -37,7 +33,7 @@ export async function sendPhotoToTelegram(req, res) {
             return res.status(500).json({ error: 'Не удалось сохранить фото' });
         }
 
-        // Отправляем фото в Telegram
+        // Используем ReadStream для отправки файла
         await bot.api.sendPhoto(userId, {
             source: fs.createReadStream(photoPath),
         });
