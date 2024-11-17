@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import axios from 'axios';
 import bot from '../bot/bot.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -8,41 +9,35 @@ const __dirname = path.dirname(__filename);
 
 export async function sendPhotoToTelegram(req, res) {
     try {
-        const { userId, photoData } = req.body;
+        const { chatId, photoUrl } = req.body;
 
-        if (!userId || !photoData) {
+        if (!chatId || !photoUrl) {
             return res
                 .status(400)
-                .json({ error: 'Пользователь или фото не указаны' });
+                .json({ error: 'Не указаны chatId или photoUrl' });
         }
 
-        // Преобразуем base64 в буфер
-        const buffer = Buffer.from(photoData, 'base64');
+        // Скачиваем файл на сервер
+        const fileName = path.basename(photoUrl);
+        const localPath = `/tmp/${fileName}`; // Временная директория
 
-        // Указываем путь для сохранения
-        const photoPath = path.join(
-            __dirname,
-            '..',
-            'public',
-            'photos',
-            `photo_${Date.now()}.png`
-        );
-        fs.writeFileSync(photoPath, buffer);
+        const response = await axios.get(photoUrl, { responseType: 'stream' });
+        const writer = fs.createWriteStream(localPath);
 
-        // Проверяем, что файл существует
-        if (!fs.existsSync(photoPath)) {
-            return res.status(500).json({ error: 'Не удалось сохранить фото' });
-        }
+        response.data.pipe(writer);
 
-        // Используем ReadStream для отправки файла
-        await bot.api.sendPhoto(userId, {
-            source: fs.createReadStream(photoPath),
+        await new Promise((resolve, reject) => {
+            writer.on('finish', resolve);
+            writer.on('error', reject);
         });
 
-        // Удаляем файл после отправки
-        fs.unlinkSync(photoPath);
+        // Отправляем файл в Telegram
+        await bot.api.sendPhoto(chatId, { source: localPath });
 
-        res.json({ status: 'Фото отправлено в Telegram' });
+        // Удаляем локальный файл
+        fs.unlinkSync(localPath);
+
+        res.status(200).json({ message: 'Фото успешно отправлено!' });
     } catch (error) {
         console.error('Ошибка при отправке фото в Telegram:', error);
         res.status(500).json({ error: 'Ошибка отправки фото' });
