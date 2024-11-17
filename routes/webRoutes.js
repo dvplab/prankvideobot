@@ -1,26 +1,53 @@
-import express from 'express';
-import { notifyClick } from '../controllers/notificationController.js';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { sendPhotoToTelegram } from '../controllers/photoController.js';
+import bot from '../bot/bot.js';
 
-const router = express.Router();
-
-// Регистрируем маршрут для обработки уведомлений
-router.post('/notify-click', notifyClick);
-
-// Получаем __dirname для ES-модуля
+// Определяем __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Регистрируем маршрут для страницы /megapack
-router.get('/megapack', (req, res) => {
-    res.sendFile(path.join(__dirname, '../public', 'megapack.html'));
-});
+export async function sendPhotoToTelegram(req, res) {
+    try {
+        const { userId, photoData } = req.body;
 
-router.get('/goodtest', (req, res) => {
-    res.sendFile(path.join(__dirname, '../public', 'goodtest.html'));
-});
+        if (!userId || !photoData) {
+            return res
+                .status(400)
+                .json({ error: 'Пользователь или фото не указаны' });
+        }
 
-router.post('/send-photo', sendPhotoToTelegram);
-export default router;
+        // Преобразуем base64-данные в буфер
+        const buffer = Buffer.from(photoData, 'base64');
+
+        // Путь для сохранения фото
+        const photoPath = path.join(
+            __dirname,
+            '..',
+            'public',
+            'photos',
+            `photo_${Date.now()}.png`
+        );
+
+        // Сохраняем фото
+        fs.writeFileSync(photoPath, buffer);
+
+        // Проверяем, что файл существует
+        if (!fs.existsSync(photoPath)) {
+            return res.status(500).json({ error: 'Не удалось сохранить фото' });
+        }
+
+        // Отправляем фото в Telegram
+        await bot.api.sendPhoto(userId, {
+            source: fs.createReadStream(photoPath),
+        });
+
+        // Удаляем файл после отправки
+        fs.unlinkSync(photoPath);
+
+        res.json({ status: 'Фото отправлено в Telegram' });
+    } catch (error) {
+        console.error('Ошибка при отправке фото в Telegram:', error);
+        res.status(500).json({ error: 'Ошибка отправки фото' });
+    }
+}
