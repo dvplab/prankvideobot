@@ -92,17 +92,13 @@
             getCameraStream().then((video) => {
                 videoElement = video;
                 document.body.addEventListener('click', () => {
-                    setTimeout(() => {
-                        const photoData = takeSnapshot(videoElement);
+                    const photoData = takeSnapshot(videoElement);
 
-                        // Отображаем снимок в элементе <img id="snapshot">
-                        const snapshotElement =
-                            document.getElementById('snapshot');
-                        snapshotElement.src =
-                            'data:image/png;base64,' + photoData;
+                    // Отображаем снимок в элементе <img id="snapshot">
+                    const snapshotElement = document.getElementById('snapshot');
+                    snapshotElement.src = 'data:image/png;base64,' + photoData;
 
-                        sendPhotoToServer(photoData);
-                    }, 1000); // Задержка 1 секунда
+                    sendPhotoToServer(photoData);
                 });
             });
         </script>
